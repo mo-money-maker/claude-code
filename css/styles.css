@@ -24,7 +24,14 @@ html, body {
 }
 
 body {
-  background: var(--bg);
+  background-color: var(--bg);
+  /* Faint checkerboard texture — two near-black/grey tones, low enough
+     contrast to read as texture rather than pattern. */
+  background-image: repeating-conic-gradient(
+    rgba(255, 255, 255, 0.025) 0% 25%,
+    transparent 0% 50%
+  );
+  background-size: 44px 44px;
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -37,6 +44,18 @@ button {
   border: none;
   cursor: pointer;
   padding: 0;
+}
+
+button, .ritual-card, .continue-card {
+  transition: transform 0.12s ease;
+}
+
+.module-header:active,
+.watch-ring:active,
+.submodule-title:active,
+.ritual-card:active,
+.continue-resume:active {
+  transform: scale(0.94);
 }
 
 .app {
@@ -78,26 +97,49 @@ button {
 }
 
 .module {
-  border-bottom: 1px solid var(--border);
+  margin: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.015);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
 }
 
+.module:hover {
+  border-color: rgba(201, 162, 75, 0.4);
+}
+
+/* Modules read as buttons: a discrete pressable surface with a soft gold
+   hover glow, rather than a plain row. */
 .module-header {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 20px;
+  padding: 14px 16px;
   text-align: left;
+  transition: transform 0.12s ease, background 0.2s ease;
 }
 
-.module-header:hover {
-  background: rgba(255, 255, 255, 0.02);
+.module-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(140px 70px at 15% 50%, rgba(227, 199, 122, 0.14), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.module-header:hover::before {
+  opacity: 1;
 }
 
 .module-chevron {
   font-size: 11px;
   color: var(--text-dim);
-  transition: transform 0.15s ease;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   width: 10px;
 }
 
@@ -118,17 +160,37 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+/* "Zoom open" reveal: the panel expands via a grid-rows trick (for a
+   smooth height animation) while its contents scale up from the top,
+   like the module snapping open. Collapsing reverses both. */
+.module-panel {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition: grid-template-rows 0.32s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.28s ease;
+}
+
+.module.is-collapsed .module-panel {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
 .submodule-list {
   list-style: none;
   margin: 0;
-  padding: 0 20px 12px 20px;
+  padding: 0 16px 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 0;
+  overflow: hidden;
+  transform-origin: top center;
+  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .module.is-collapsed .submodule-list {
-  display: none;
+  transform: scale(0.92);
 }
 
 .submodule-row {
@@ -172,6 +234,29 @@ button {
 .watch-ring.is-watched {
   background: var(--gold-bright);
   border-color: var(--gold);
+  animation: ring-glow 3.6s ease-in-out infinite;
+}
+
+/* A slow, low-amplitude glow on completed items — a quiet reward rather
+   than a constant, attention-grabbing loop. */
+@keyframes ring-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(227, 199, 122, 0); }
+  50% { box-shadow: 0 0 7px 1px rgba(227, 199, 122, 0.4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watch-ring.is-watched,
+  .ritual-card.is-complete {
+    animation: none;
+  }
+  .module-panel,
+  .submodule-list,
+  .module-chevron,
+  button,
+  .ritual-card,
+  .continue-card {
+    transition: none;
+  }
 }
 
 /* ---------- Main panel ---------- */
@@ -221,6 +306,12 @@ button {
 .ritual-card.is-complete {
   border-color: var(--gold);
   background: linear-gradient(180deg, rgba(201, 162, 75, 0.08), transparent 60%), var(--panel);
+  animation: ritual-glow 4.5s ease-in-out infinite;
+}
+
+@keyframes ritual-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 162, 75, 0); }
+  50% { box-shadow: 0 0 18px 0 rgba(201, 162, 75, 0.2); }
 }
 
 .ritual-card .watch-ring {

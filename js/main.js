@@ -1,3 +1,3 @@
-import { render } from "./render.js";
+import { init } from "./render.js";
 
-render();
+init();

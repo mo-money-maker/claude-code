@@ -1,6 +1,9 @@
-// DOM rendering. Rebuilds the left rail and main panel from current data +
-// state on every call. The tree here is small enough that a full re-render
-// per interaction is simpler (and plenty fast) than diffing by hand.
+// DOM rendering. The rail is built once, then updated with targeted class
+// toggles + text updates (not full rebuilds) so the module "zoom open" CSS
+// transition in styles.css only ever plays on the module actually clicked.
+// Rituals work the same way. Continue Watching is the exception: its list
+// membership changes as items are opened/completed, so that one section is
+// rebuilt on change — it has no mount animation, so that's cheap and safe.
 
 import { modules, rituals } from "../data/curriculum.js";
 import {
@@ -27,78 +30,106 @@ function el(tag, className, children) {
   return node;
 }
 
-function watchRing(watched) {
-  const ring = el("button", "watch-ring" + (watched ? " is-watched" : ""));
-  ring.type = "button";
-  ring.setAttribute("aria-label", watched ? "Mark as unwatched" : "Mark as watched");
-  ring.setAttribute("aria-pressed", String(watched));
-  return ring;
-}
-
-function renderSubmodule(module, submodule, onChange) {
-  const watched = isWatched(submodule.id);
-  const row = el("li", "submodule-row");
-
-  const ring = watchRing(watched);
-  ring.addEventListener("click", (e) => {
-    e.stopPropagation();
-    toggleWatched(submodule.id);
-    onChange();
-  });
-
-  const title = el("button", "submodule-title", submodule.title);
-  title.type = "button";
-  title.addEventListener("click", () => {
-    markOpened(submodule.id);
-    onChange();
-  });
-
-  row.append(ring, title);
-  return row;
-}
-
-function renderModule(module, onChange) {
+function progressLabel(module) {
   const { watchedCount, total } = getModuleProgress(module);
+  return `${watchedCount}/${total}`;
+}
+
+// ---------- Left rail ----------
+
+function buildModuleNode(module) {
   const collapsed = isModuleCollapsed(module.id);
 
-  const wrap = el("li", "module" + (collapsed ? " is-collapsed" : ""));
+  const li = el("li", "module" + (collapsed ? " is-collapsed" : ""));
+  li.dataset.moduleId = module.id;
 
   const header = el("button", "module-header");
   header.type = "button";
   header.setAttribute("aria-expanded", String(!collapsed));
-
-  const chevron = el("span", "module-chevron", "▾");
-  const title = el("span", "module-title", module.title);
-  const progress = el("span", "module-progress", `${watchedCount}/${total}`);
-
-  header.append(chevron, title, progress);
-  header.addEventListener("click", () => {
-    toggleModuleCollapsed(module.id);
-    onChange();
-  });
+  header.append(
+    el("span", "module-chevron", "▾"),
+    el("span", "module-title", module.title),
+    el("span", "module-progress", progressLabel(module))
+  );
 
   const list = el(
     "ul",
     "submodule-list",
-    module.submodules.map((s) => renderSubmodule(module, s, onChange))
+    module.submodules.map((sub) => {
+      const row = el("li", "submodule-row");
+      row.dataset.submoduleId = sub.id;
+
+      const ring = el("button", "watch-ring" + (isWatched(sub.id) ? " is-watched" : ""));
+      ring.type = "button";
+      ring.dataset.action = "toggle-watch";
+      ring.setAttribute("aria-label", "Toggle watched");
+
+      const title = el("button", "submodule-title", sub.title);
+      title.type = "button";
+      title.dataset.action = "open";
+
+      row.append(ring, title);
+      return row;
+    })
   );
 
-  wrap.append(header, list);
-  return wrap;
+  const panel = el("div", "module-panel", list);
+  li.append(header, panel);
+  return li;
 }
 
-function renderRail(onChange) {
+function buildRail() {
   const rail = document.getElementById("rail-modules");
-  rail.replaceChildren(...modules.map((m) => renderModule(m, onChange)));
+  rail.replaceChildren(...modules.map(buildModuleNode));
 }
 
-function renderRitualCard(ritual, onChange) {
+// Reflects one submodule's watched state + its module's progress count
+// without touching any other DOM node.
+function syncSubmodule(submoduleId) {
+  const row = document.querySelector(`.submodule-row[data-submodule-id="${submoduleId}"]`);
+  if (!row) return;
+  row.querySelector(".watch-ring").classList.toggle("is-watched", isWatched(submoduleId));
+
+  const moduleNode = row.closest(".module");
+  const module = modules.find((m) => m.id === moduleNode.dataset.moduleId);
+  moduleNode.querySelector(".module-progress").textContent = progressLabel(module);
+}
+
+function handleRailClick(e) {
+  const ringBtn = e.target.closest('[data-action="toggle-watch"]');
+  if (ringBtn) {
+    const submoduleId = ringBtn.closest(".submodule-row").dataset.submoduleId;
+    toggleWatched(submoduleId);
+    syncSubmodule(submoduleId);
+    return;
+  }
+
+  const openBtn = e.target.closest('[data-action="open"]');
+  if (openBtn) {
+    const submoduleId = openBtn.closest(".submodule-row").dataset.submoduleId;
+    markOpened(submoduleId);
+    renderContinueWatching();
+    return;
+  }
+
+  const header = e.target.closest(".module-header");
+  if (header) {
+    const moduleNode = header.closest(".module");
+    toggleModuleCollapsed(moduleNode.dataset.moduleId);
+    const collapsed = isModuleCollapsed(moduleNode.dataset.moduleId);
+    moduleNode.classList.toggle("is-collapsed", collapsed);
+    header.setAttribute("aria-expanded", String(!collapsed));
+  }
+}
+
+// ---------- Daily Rituals ----------
+
+function buildRitualCard(ritual) {
   const done = isRitualCompleteToday(ritual.id);
   const card = el("div", "ritual-card" + (done ? " is-complete" : ""));
+  card.dataset.ritualId = ritual.id;
 
-  const ring = watchRing(done);
-  ring.setAttribute("aria-label", done ? "Mark ritual as not done today" : "Mark ritual done today");
-
+  const ring = el("span", "watch-ring" + (done ? " is-watched" : ""));
   const body = el("div", "ritual-body", [
     el("span", "ritual-period", ritual.period),
     el("h3", "ritual-title", ritual.title),
@@ -106,20 +137,43 @@ function renderRitualCard(ritual, onChange) {
   ]);
 
   card.append(ring, body);
-  card.addEventListener("click", () => {
-    toggleRitualToday(ritual.id);
-    onChange();
-  });
-
   return card;
 }
 
-function renderRituals(onChange) {
+function buildRituals() {
   const wrap = document.getElementById("rituals-list");
-  wrap.replaceChildren(...rituals.map((r) => renderRitualCard(r, onChange)));
+  wrap.replaceChildren(...rituals.map(buildRitualCard));
 }
 
-function renderContinueWatching(onChange) {
+function handleRitualsClick(e) {
+  const card = e.target.closest(".ritual-card");
+  if (!card) return;
+  const ritualId = card.dataset.ritualId;
+  toggleRitualToday(ritualId);
+  const done = isRitualCompleteToday(ritualId);
+  card.classList.toggle("is-complete", done);
+  card.querySelector(".watch-ring").classList.toggle("is-watched", done);
+}
+
+// ---------- Continue Watching ----------
+
+function buildContinueCard({ module, submodule }) {
+  const card = el("div", "continue-card");
+  card.dataset.submoduleId = submodule.id;
+
+  const thumb = el("div", "continue-thumb");
+  const body = el("div", "continue-body", [
+    el("span", "continue-breadcrumb", module.title),
+    el("h3", "continue-title", submodule.title),
+  ]);
+  const resume = el("button", "continue-resume", "Resume");
+  resume.type = "button";
+
+  card.append(thumb, body, resume);
+  return card;
+}
+
+function renderContinueWatching() {
   const wrap = document.getElementById("continue-watching-list");
   const items = getContinueWatching(modules);
 
@@ -130,30 +184,26 @@ function renderContinueWatching(onChange) {
     return;
   }
 
-  wrap.replaceChildren(
-    ...items.map(({ module, submodule }) => {
-      const card = el("div", "continue-card");
-      const thumb = el("div", "continue-thumb");
-      const body = el("div", "continue-body", [
-        el("span", "continue-breadcrumb", module.title),
-        el("h3", "continue-title", submodule.title),
-      ]);
-      const resume = el("button", "continue-resume", "Resume");
-      resume.type = "button";
-      resume.addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleWatched(submodule.id);
-        onChange();
-      });
-      card.append(thumb, body, resume);
-      return card;
-    })
-  );
+  wrap.replaceChildren(...items.map(buildContinueCard));
 }
 
-export function render() {
-  const onChange = render;
-  renderRail(onChange);
-  renderRituals(onChange);
-  renderContinueWatching(onChange);
+function handleContinueClick(e) {
+  const btn = e.target.closest(".continue-resume");
+  if (!btn) return;
+  const submoduleId = btn.closest(".continue-card").dataset.submoduleId;
+  toggleWatched(submoduleId);
+  syncSubmodule(submoduleId);
+  renderContinueWatching();
+}
+
+// ---------- Entry point ----------
+
+export function init() {
+  buildRail();
+  buildRituals();
+  renderContinueWatching();
+
+  document.getElementById("rail-modules").addEventListener("click", handleRailClick);
+  document.getElementById("rituals-list").addEventListener("click", handleRitualsClick);
+  document.getElementById("continue-watching-list").addEventListener("click", handleContinueClick);
 }
