@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — Curriculum</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="auth-body">
+  <main class="auth-card">
+    <h1 class="auth-brand">Curriculum</h1>
+
+    <div class="auth-tabs">
+      <button class="auth-tab is-active" id="tab-login" type="button">Sign in</button>
+      <button class="auth-tab" id="tab-signup" type="button">Create account</button>
+    </div>
+
+    <form class="auth-form" id="auth-form">
+      <label class="auth-field" id="field-name" hidden>
+        <span>Name</span>
+        <input type="text" name="displayName" autocomplete="name" />
+      </label>
+      <label class="auth-field">
+        <span>Email</span>
+        <input type="email" name="email" autocomplete="email" required />
+      </label>
+      <label class="auth-field">
+        <span>Password</span>
+        <input type="password" name="password" autocomplete="current-password" required minlength="8" />
+      </label>
+      <p class="auth-error" id="auth-error" hidden></p>
+      <button class="auth-submit" type="submit">Sign in</button>
+    </form>
+  </main>
+
+  <script type="module" src="js/auth.js"></script>
+</body>
+</html>

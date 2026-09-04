@@ -198,7 +198,9 @@ function handleContinueClick(e) {
 
 // ---------- Entry point ----------
 
-export function init() {
+export function init(displayName) {
+  document.getElementById("rail-user-name").textContent = displayName;
+
   buildRail();
   buildRituals();
   renderContinueWatching();

@@ -1,8 +1,10 @@
-// All mutable app state + localStorage persistence lives here.
-// Nothing in this file knows how to render — render.js reads these
-// functions' return values and rebuilds the DOM.
+// Mutable app state. Reads/writes are synchronous against an in-memory
+// object (so UI updates and their CSS animations stay instant), backed by
+// the server: initState() loads the signed-in user's state once at boot,
+// and every mutator fires an async, fire-and-forget save after updating
+// the local copy.
 
-const STORAGE_KEY = "curriculum-ui:v1";
+import * as api from "./api.js";
 
 function todayKey() {
   const d = new Date();
@@ -11,42 +13,25 @@ function todayKey() {
   ).padStart(2, "0")}`;
 }
 
-function loadRaw() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+let state = { watched: {}, lastOpened: {}, ritualCompletion: {}, collapsed: {} };
+let ready = false;
+
+export async function initState() {
+  const remote = await api.getState();
+  state = {
+    watched: remote.watched || {},
+    lastOpened: remote.lastOpened || {},
+    ritualCompletion: remote.ritualCompletion || {},
+    collapsed: remote.collapsed || {},
+  };
+  ready = true;
 }
-
-function saveRaw(data) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch {
-    // localStorage unavailable (private mode, quota, etc.) — state just
-    // won't persist across reloads. Not fatal to the app.
-  }
-}
-
-const raw = loadRaw() || {};
-
-const state = {
-  // { [submoduleId]: true } — presence = watched
-  watched: raw.watched || {},
-  // { [submoduleId]: isoTimestamp } — last time a submodule was opened;
-  // drives "Continue Watching"
-  lastOpened: raw.lastOpened || {},
-  // { [dateKey]: { [ritualId]: true } } — resets naturally each day since
-  // it's keyed by calendar date
-  ritualCompletion: raw.ritualCompletion || {},
-  // { [moduleId]: true } — collapsed modules in the left rail
-  collapsed: raw.collapsed || {},
-};
 
 function persist() {
-  saveRaw(state);
+  if (!ready) return;
+  api.saveState(state).catch((err) => {
+    console.error("Failed to save progress:", err.message);
+  });
 }
 
 export function isWatched(submoduleId) {
