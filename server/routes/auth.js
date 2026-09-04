@@ -10,7 +10,7 @@ import { db } from "../db.js";
 const SESSION_DAYS = 30;
 const COOKIE_NAME = "sid";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const EMPTY_STATE = JSON.stringify({ watched: {}, lastOpened: {}, ritualCompletion: {}, collapsed: {} });
+const EMPTY_STATE = JSON.stringify({ watched: {}, progress: {}, ritualCompletion: {}, activity: {} });
 
 function parseCookies(req) {
   const header = req.headers.cookie;

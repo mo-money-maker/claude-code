@@ -20,6 +20,9 @@ app.post("/api/logout", logout);
 app.get("/api/me", me);
 app.get("/api/state", requireAuth, getState);
 app.put("/api/state", requireAuth, putState);
+// Same handler over POST so the client can use navigator.sendBeacon on
+// page unload (beacons are POST-only).
+app.post("/api/state", requireAuth, putState);
 
 // Static frontend only — server/ (including the SQLite file) is never
 // under this directory, so it can't be served by accident.

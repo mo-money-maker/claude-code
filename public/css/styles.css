@@ -9,29 +9,18 @@
 
   --font-serif: "Fraunces", serif;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-
-  --rail-width: 300px;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
   background-color: var(--bg);
-  /* Faint checkerboard texture — two near-black/grey tones, low enough
-     contrast to read as texture rather than pattern. */
-  background-image: repeating-conic-gradient(
-    rgba(255, 255, 255, 0.025) 0% 25%,
-    transparent 0% 50%
-  );
-  background-size: 44px 44px;
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -44,395 +33,490 @@ button {
   border: none;
   cursor: pointer;
   padding: 0;
-}
-
-button, .ritual-card, .continue-card {
   transition: transform 0.12s ease;
 }
 
-.module-header:active,
-.watch-ring:active,
-.submodule-title:active,
-.ritual-card:active,
-.continue-resume:active {
-  transform: scale(0.94);
-}
+/* ---------- Background layers ---------- */
 
-.app {
-  display: flex;
-  min-height: 100vh;
-}
-
-/* ---------- Left rail ---------- */
-
-.rail {
+/* Module picture. Sits behind everything, heavily dimmed so text stays
+   readable over it. */
+.backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--rail-width);
-  height: 100vh;
-  background: var(--panel);
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
+  inset: 0;
+  z-index: -3;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.backdrop.is-active {
+  opacity: 0.85;
+  transform: scale(1);
+}
+
+/* Dark wash so the picture stays present but text on top stays readable. */
+.backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 11, 13, 0.5), rgba(11, 11, 13, 0.88));
+}
+
+/* The infinity mark — large, centred, barely there. */
+.infinity {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
 
-.rail-header {
-  padding: 24px 20px;
-  border-bottom: 1px solid var(--border);
+.infinity svg {
+  width: min(78vh, 70vw);
+  height: auto;
 }
 
-.rail-brand {
+.infinity-base {
+  stroke: var(--gold);
+  opacity: 0.1;
+}
+
+.infinity-trace {
+  stroke: var(--gold-bright);
+  opacity: 0.32;
+  stroke-linecap: round;
+  stroke-dasharray: 7 93;
+  animation: trace 24s linear infinite;
+}
+
+@keyframes trace {
+  to { stroke-dashoffset: -100; }
+}
+
+/* ---------- Top bar ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+}
+
+.brand {
   font-family: var(--font-serif);
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
 
-.rail-user {
+.topbar-right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
+  gap: 14px;
 }
 
-.rail-user-name {
+.user-name {
   font-size: 13px;
   color: var(--text-dim);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.rail-logout {
+.logout {
   font-size: 12px;
   color: var(--text-dim);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 5px 10px;
-  white-space: nowrap;
   transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.rail-logout:hover {
+.logout:hover {
   border-color: var(--gold);
   color: var(--gold-bright);
 }
 
-.module-list {
-  list-style: none;
-  margin: 0;
-  padding: 8px 0;
+/* ---------- Shared ---------- */
+
+#view {
+  padding: 8px 24px 80px;
 }
 
-.module {
-  margin: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.015);
-  overflow: hidden;
-  transition: border-color 0.2s ease;
-}
-
-.module:hover {
-  border-color: rgba(201, 162, 75, 0.4);
-}
-
-/* Modules read as buttons: a discrete pressable surface with a soft gold
-   hover glow, rather than a plain row. */
-.module-header {
-  position: relative;
+.home, .module-view, .player {
   width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 16px;
-  text-align: left;
-  transition: transform 0.12s ease, background 0.2s ease;
+  max-width: 880px;
+  margin: 0 auto;
 }
 
-.module-header::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(140px 70px at 15% 50%, rgba(227, 199, 122, 0.14), transparent 70%);
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  pointer-events: none;
-}
-
-.module-header:hover::before {
-  opacity: 1;
-}
-
-.module-chevron {
+.section-label {
   font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--text-dim);
-  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  width: 10px;
+  margin: 0 0 14px 0;
 }
 
-.module.is-collapsed .module-chevron {
-  transform: rotate(-90deg);
+.back {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 24px;
+  transition: color 0.15s ease;
 }
 
-.module-title {
-  font-family: var(--font-serif);
-  font-size: 15px;
-  font-weight: 500;
+.back:hover { color: var(--gold-bright); }
+
+.bar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
   flex: 1;
 }
 
-.module-progress {
+.bar-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Status ring — hollow, arc, then solid gold. Never clickable. */
+.ring { display: inline-flex; flex: none; }
+.ring-track { stroke: var(--border); }
+.ring-fill { stroke: var(--gold-bright); transition: stroke-dasharray 0.3s ease; }
+.ring-core { fill: var(--gold-bright); }
+
+.ring.is-complete .ring-track { stroke: var(--gold); }
+
+/* ---------- Home ---------- */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+  padding-top: 24px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: center;
+  gap: 56px;
+  text-align: center;
+}
+
+.stat { display: flex; flex-direction: column; gap: 4px; }
+
+.stat-value {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--gold-bright);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.goals { max-width: 460px; margin: 0 auto; width: 100%; }
+
+.goal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.goal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(23, 23, 26, 0.6);
+}
+
+.goal.is-done {
+  border-color: rgba(201, 162, 75, 0.5);
+  color: var(--gold-bright);
+}
+
+.goal-label { flex: 1; }
+
+.goal-count {
   font-size: 12px;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
 }
 
-/* "Zoom open" reveal: the panel expands via a grid-rows trick (for a
-   smooth height animation) while its contents scale up from the top,
-   like the module snapping open. Collapsing reverses both. */
-.module-panel {
-  display: grid;
-  grid-template-rows: 1fr;
-  opacity: 1;
-  transition: grid-template-rows 0.32s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.28s ease;
-}
+.goal.is-done .goal-count { color: var(--gold); }
 
-.module.is-collapsed .module-panel {
-  grid-template-rows: 0fr;
-  opacity: 0;
-}
-
-.submodule-list {
-  list-style: none;
-  margin: 0;
-  padding: 0 16px 12px 16px;
+.resume {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-height: 0;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  border: 1px solid rgba(201, 162, 75, 0.45);
+  border-radius: 10px;
+  background: rgba(201, 162, 75, 0.07);
+  text-align: left;
+}
+
+.resume:hover { border-color: var(--gold); }
+.resume:active { transform: scale(0.99); }
+
+.resume-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.resume-title { font-size: 14px; flex: 1; }
+
+/* Module shelf */
+
+.shelf {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 4px 4px 18px;
+  scrollbar-width: thin;
+}
+
+.shelf::-webkit-scrollbar { height: 6px; }
+.shelf::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.module-card {
+  flex: 0 0 268px;
+  scroll-snap-align: center;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   overflow: hidden;
-  transform-origin: top center;
-  transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--panel);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
 }
 
-.module.is-collapsed .submodule-list {
-  transform: scale(0.92);
+.module-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(201, 162, 75, 0.55);
 }
 
-.submodule-row {
+.module-card:active { transform: translateY(-1px) scale(0.99); }
+
+.module-card.is-complete { border-color: rgba(201, 162, 75, 0.5); }
+
+.module-art {
+  height: 132px;
+  background-size: cover;
+  background-position: center;
+}
+
+.module-info { padding: 14px 16px 16px; }
+
+.module-name {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 5px 0;
+}
+
+.module-blurb {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin: 0 0 14px 0;
+  line-height: 1.45;
+  min-height: 36px;
+}
+
+.module-meta, .module-progress-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 0 6px 8px;
-  border-radius: 4px;
 }
 
-.submodule-row:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.submodule-title {
-  flex: 1;
-  text-align: left;
-  font-size: 13.5px;
+.module-count {
+  font-size: 12px;
   color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
 }
 
-.submodule-row:hover .submodule-title {
-  color: var(--text);
+.shelf-hint {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  margin: 2px 0 0 0;
 }
 
-/* Watched-status ring: hollow by default, fills gold when watched. */
-.watch-ring {
-  width: 14px;
-  height: 14px;
-  min-width: 14px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  background: transparent;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
+/* Rituals */
 
-.watch-ring:hover {
-  border-color: var(--gold);
-}
-
-.watch-ring.is-watched {
-  background: var(--gold-bright);
-  border-color: var(--gold);
-  animation: ring-glow 3.6s ease-in-out infinite;
-}
-
-/* A slow, low-amplitude glow on completed items — a quiet reward rather
-   than a constant, attention-grabbing loop. */
-@keyframes ring-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(227, 199, 122, 0); }
-  50% { box-shadow: 0 0 7px 1px rgba(227, 199, 122, 0.4); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .watch-ring.is-watched,
-  .ritual-card.is-complete {
-    animation: none;
-  }
-  .module-panel,
-  .submodule-list,
-  .module-chevron,
-  button,
-  .ritual-card,
-  .continue-card {
-    transition: none;
-  }
-}
-
-/* ---------- Main panel ---------- */
-
-.main {
-  margin-left: var(--rail-width);
-  flex: 1;
-  padding: 40px 48px;
-  max-width: 920px;
-}
-
-.panel-section {
-  margin-bottom: 48px;
-}
-
-.section-title {
-  font-family: var(--font-serif);
-  font-size: 22px;
-  font-weight: 600;
-  margin: 0 0 18px 0;
-}
-
-/* Daily Rituals */
-
-.ritual-grid {
+.ritual-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
 }
 
-.ritual-card {
+.ritual {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  background: var(--panel);
+  padding: 16px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 18px;
-  cursor: pointer;
-  transition: border-color 0.15s ease;
+  background: rgba(23, 23, 26, 0.7);
+  text-align: left;
 }
 
-.ritual-card:hover {
+.ritual:hover { border-color: rgba(201, 162, 75, 0.5); }
+.ritual:active { transform: scale(0.99); }
+
+.ritual.is-complete {
   border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(201, 162, 75, 0.09), transparent 65%), rgba(23, 23, 26, 0.7);
 }
 
-.ritual-card.is-complete {
-  border-color: var(--gold);
-  background: linear-gradient(180deg, rgba(201, 162, 75, 0.08), transparent 60%), var(--panel);
-  animation: ritual-glow 4.5s ease-in-out infinite;
-}
-
-@keyframes ritual-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(201, 162, 75, 0); }
-  50% { box-shadow: 0 0 18px 0 rgba(201, 162, 75, 0.2); }
-}
-
-.ritual-card .watch-ring {
-  margin-top: 3px;
-}
+.ritual-body { display: flex; flex-direction: column; gap: 3px; }
 
 .ritual-period {
-  display: inline-block;
-  font-size: 11px;
-  letter-spacing: 0.08em;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
   color: var(--gold-bright);
   font-weight: 600;
-  margin-bottom: 4px;
 }
 
 .ritual-title {
   font-family: var(--font-serif);
-  font-size: 17px;
-  font-weight: 500;
-  margin: 0 0 4px 0;
+  font-size: 15.5px;
 }
 
 .ritual-subtitle {
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--text-dim);
+}
+
+/* ---------- Module view ---------- */
+
+.module-view { padding-top: 24px; }
+
+.module-heading {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 600;
+  margin: 0 0 6px 0;
+}
+
+.module-sub {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin: 0 0 20px 0;
+}
+
+.module-progress-row { margin-bottom: 28px; }
+
+.lesson-list { display: flex; flex-direction: column; gap: 8px; }
+
+.lesson {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 15px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(23, 23, 26, 0.72);
+  text-align: left;
+  transition: transform 0.14s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.lesson:hover {
+  border-color: rgba(201, 162, 75, 0.55);
+  background: rgba(30, 30, 34, 0.8);
+}
+
+.lesson:active { transform: scale(0.995); }
+
+.lesson-title { flex: 1; font-size: 14.5px; }
+
+.lesson.is-complete .lesson-title { color: var(--text-dim); }
+
+.lesson-status {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.lesson.is-complete .lesson-status { color: var(--gold); }
+
+/* ---------- Player ---------- */
+
+.player { padding-top: 24px; }
+
+.player-stage {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.player-stage.is-complete {
+  border-color: var(--gold);
+  box-shadow: 0 0 26px rgba(201, 162, 75, 0.16);
+}
+
+.player-video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+
+.player-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 13.5px;
   margin: 0;
 }
 
-/* Continue Watching */
-
-.continue-list {
+.player-meta {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.empty-state {
-  color: var(--text-dim);
-  font-size: 14px;
-}
-
-.continue-card {
-  display: flex;
-  align-items: center;
+  align-items: flex-end;
+  justify-content: space-between;
   gap: 16px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
+  margin: 18px 0 12px;
 }
 
-.continue-thumb {
-  width: 72px;
-  height: 44px;
-  min-width: 72px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, var(--border), var(--bg));
-}
+.player-titles { display: flex; flex-direction: column; gap: 4px; }
 
-.continue-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.continue-breadcrumb {
-  font-size: 12px;
-  color: var(--text-dim);
-}
-
-.continue-title {
+.player-title {
   font-family: var(--font-serif);
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 500;
   margin: 0;
 }
 
-.continue-resume {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--bg);
-  background: var(--gold-bright);
-  padding: 8px 16px;
-  border-radius: 6px;
+.player-sub { font-size: 12.5px; color: var(--text-dim); }
+
+.player-status {
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-dim);
   white-space: nowrap;
 }
 
-.continue-resume:hover {
-  background: var(--gold);
-}
+.player-stage.is-complete ~ .player-meta .player-status { color: var(--gold-bright); }
 
 /* ---------- Auth screen ---------- */
 
@@ -482,11 +566,7 @@ button, .ritual-card, .continue-card {
   color: var(--gold-bright);
 }
 
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+.auth-form { display: flex; flex-direction: column; gap: 16px; }
 
 .auth-field {
   display: flex;
@@ -506,16 +586,9 @@ button, .ritual-card, .continue-card {
   padding: 10px 12px;
 }
 
-.auth-field input:focus {
-  outline: none;
-  border-color: var(--gold);
-}
+.auth-field input:focus { outline: none; border-color: var(--gold); }
 
-.auth-error {
-  font-size: 13px;
-  color: #E37A7A;
-  margin: 0;
-}
+.auth-error { font-size: 13px; color: #E37A7A; margin: 0; }
 
 .auth-submit {
   background: var(--gold-bright);
@@ -527,15 +600,11 @@ button, .ritual-card, .continue-card {
   transition: background 0.15s ease, transform 0.12s ease;
 }
 
-.auth-submit:hover {
-  background: var(--gold);
-}
+.auth-submit:hover { background: var(--gold); }
+.auth-submit:active { transform: scale(0.97); }
+.auth-submit:disabled { opacity: 0.6; cursor: default; }
 
-.auth-submit:active {
-  transform: scale(0.97);
-}
-
-.auth-submit:disabled {
-  opacity: 0.6;
-  cursor: default;
+@media (prefers-reduced-motion: reduce) {
+  .infinity-trace { animation: none; }
+  *, .backdrop, .module-card, .bar-fill { transition: none !important; }
 }

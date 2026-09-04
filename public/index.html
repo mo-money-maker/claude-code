@@ -13,30 +13,32 @@
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <div class="app">
-    <aside class="rail">
-      <div class="rail-header">
-        <span class="rail-brand">Curriculum</span>
-        <div class="rail-user">
-          <span class="rail-user-name" id="rail-user-name"></span>
-          <button class="rail-logout" id="rail-logout" type="button">Log out</button>
-        </div>
-      </div>
-      <ul class="module-list" id="rail-modules"></ul>
-    </aside>
+  <!-- Module picture, swapped in once you're inside a module -->
+  <div class="backdrop" id="backdrop"></div>
 
-    <main class="main">
-      <section class="panel-section">
-        <h2 class="section-title">Daily Rituals</h2>
-        <div class="ritual-grid" id="rituals-list"></div>
-      </section>
-
-      <section class="panel-section">
-        <h2 class="section-title">Continue Watching</h2>
-        <div class="continue-list" id="continue-watching-list"></div>
-      </section>
-    </main>
+  <!-- Standing infinity mark: gold on black, deliberately faint -->
+  <div class="infinity" aria-hidden="true">
+    <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+      <path class="infinity-base"
+        d="M 10,50 C 10,25 35,25 50,50 C 65,75 90,75 90,50 C 90,25 65,25 50,50 C 35,75 10,75 10,50 Z"
+        fill="none" stroke-width="0.45" pathLength="100" />
+      <!-- a single short segment travelling the loop, so the mark reads as
+           alive without ever pulling focus -->
+      <path class="infinity-trace"
+        d="M 10,50 C 10,25 35,25 50,50 C 65,75 90,75 90,50 C 90,25 65,25 50,50 C 35,75 10,75 10,50 Z"
+        fill="none" stroke-width="0.7" pathLength="100" />
+    </svg>
   </div>
+
+  <header class="topbar">
+    <button class="brand" id="brand" type="button">Curriculum</button>
+    <div class="topbar-right">
+      <span class="user-name" id="user-name"></span>
+      <button class="logout" id="logout" type="button">Log out</button>
+    </div>
+  </header>
+
+  <main id="view"></main>
 
   <script type="module" src="js/main.js"></script>
 </body>

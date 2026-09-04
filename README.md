@@ -25,15 +25,21 @@ account" to make your first user.
 
 ```
 public/                Frontend — served as static files, no build step
-  index.html            App shell: left rail + main panel markup
+  index.html            The whole app: one page, hash-routed views
   login.html             Sign in / create account screen
   css/styles.css          Design tokens + all styling
   data/curriculum.js      Your real content: modules, submodules, rituals
-  js/api.js                fetch wrapper for the backend
-  js/state.js               In-memory app state, synced to the server
-  js/render.js               Builds the DOM from data/ + state.js
-  js/auth.js                 Wires up login.html
-  js/main.js                  Entry point for index.html: auth gate + boot
+  assets/modules/*.svg     Module preview art (also the module background)
+  assets/video/*.webm       Generated placeholder lesson clips
+  js/api.js                  fetch wrapper for the backend
+  js/state.js                 In-memory state, synced to the server
+  js/router.js                 Hash router (#/, #/m/:id, #/w/:mid/:sid, #/r/:id)
+  js/ui.js                      Shared DOM helpers (status ring, bars, backdrop)
+  js/views/home.js               Goals, counters, module shelf, rituals
+  js/views/module.js              Lesson list over the module's picture
+  js/views/player.js               Video + autonomous completion
+  js/auth.js                        Wires up login.html
+  js/main.js                         Entry point: auth gate, routes, boot
 
 server/                Backend
   server.js              Express app: mounts /api/* and serves public/
@@ -67,22 +73,38 @@ status for everyone.
 
 ## Behavior implemented
 
+- **One page**: home → module → player are hash-routed views, no reloads
+  and no sidebar. The back link in each view walks you out.
 - **Accounts**: email/password signup and login (bcrypt-hashed passwords,
   server-side session tokens in an httpOnly cookie — see
-  `server/routes/auth.js`). Each user's watched/opened/ritual state is
-  private to their account, stored in `server/app.db`.
-- Left rail: collapsible module → submodule outline. Clicking a module
-  header "zooms" it open/closed (grid-rows + scale CSS transition).
-- Watch ring next to each submodule: click to toggle watched (hollow →
-  filled gold, with a slow idle glow once watched). Toggling updates that
-  module's live `n/total` count.
-- Clicking a submodule's title marks it "opened" and surfaces it under
-  Continue Watching (most recently opened, unwatched items first).
-- Daily Rituals (AM/PM) cards: click to toggle today's completion. State is
-  keyed by calendar date, so it resets automatically each day.
-- All watched/opened/ritual state is saved to the server on every change
-  and reloaded from there on boot — it follows the signed-in user, not the
-  browser.
+  `server/routes/auth.js`). Each user's progress is private to their
+  account, stored in `server/app.db`.
+- **Autonomous completion**: nothing is ticked by hand. The player reports
+  playback position and an item completes itself once it passes
+  `COMPLETE_AT` (90%, the usual LMS convention — trailing silence or
+  credits shouldn't strand a lesson at 99%). The status rings are display
+  only; they fill as you watch and go solid gold when done.
+- **Goals and counters** on the home screen: day streak, lessons watched,
+  rituals done today, plus a short goal list that ticks itself off as you
+  go.
+- **Module shelf**: horizontally scrollable, scroll-snapped module cards
+  with preview art. A plain vertical mouse wheel scrolls it sideways.
+- **Module picture as background**: entering a module fades its preview art
+  in behind the lesson list, under a dark wash so text stays readable.
+- **Resume**: whichever lesson you got furthest into without finishing
+  surfaces as a Resume button, and the player picks up where you left off.
+- Daily Rituals (AM/PM) are tracked per calendar date, so they reset each
+  morning.
+- Progress is saved to the server (debounced), and flushed with
+  `navigator.sendBeacon` on page unload so a half-watched position isn't
+  lost when the tab closes.
+
+## Placeholder media
+
+`public/assets/video/*.webm` are generated stand-in clips and
+`public/assets/modules/*.svg` is generated abstract art, both there so the
+app is usable before you have real content. Swap the `videoUrl` and
+`image` values in `data/curriculum.js` for your real files.
 
 ## Security notes for going further than local dev
 
@@ -99,17 +121,15 @@ status for everyone.
 
 Good next steps, in roughly increasing order of effort:
 
-- **Real video player**: `videoUrl` fields already exist on submodules and
-  rituals — wire a click on `.continue-resume` / ritual cards to open a
-  player (modal, route, or inline `<video>`) and call `markOpened` /
-  `toggleWatched` from the player's `onEnded`/progress events instead of
-  from the row click.
+- **Real content**: replace the placeholder `videoUrl` / `image` values in
+  `data/curriculum.js`. Hosted URLs work as-is; for a streaming provider
+  (Mux, Vimeo, Cloudflare Stream) swap the `<video>` element in
+  `js/views/player.js` for their embed and call `setProgress` /
+  `completeItem` from that player's progress events instead.
 - **Password reset / email verification**: needs an email-sending
-  provider; the `users` table already has room for a `reset_token` /
-  `verified_at` column if you want to add this.
-- **Coach vs. client roles**: add a `role` column to `users` and a simple
-  admin view for editing curriculum content through the UI instead of
+  provider; add a `reset_token` / `verified_at` column to `users`.
+- **Coach vs. client roles**: add a `role` column to `users` and an admin
+  view for editing curriculum content through the UI instead of
   hand-editing `data/curriculum.js`.
-- **Search/filter in the rail**: add a text input above `#rail-modules`
-  that filters the `modules` array before passing it to the render
-  functions.
+- **Autoplay the next lesson** when one completes, so a module can be
+  watched straight through.
