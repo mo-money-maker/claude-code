@@ -58,10 +58,12 @@ content updates.
 ```js
 export const modules = [
   {
-    id: "mod-foundations",       // must stay stable — used as the
-    title: "Foundations",        // storage key for that item's watched state
+    id: "mod-more-life-1",              // must stay stable — it's the
+    title: "More Life Mastery 1.0",     // storage key for progress
+    blurb: "Shown on the module card.",
+    image: "assets/modules/more-life-1.svg",
     submodules: [
-      { id: "sub-welcome", title: "Welcome & Orientation", videoUrl: "" },
+      { id: "mlm1-framework", title: "The More Life Framework", videoUrl: "..." },
     ],
   },
 ];
@@ -87,6 +89,17 @@ status for everyone.
 - **Goals and counters** on the home screen: day streak, lessons watched,
   rituals done today, plus a short goal list that ticks itself off as you
   go.
+- **Streak accountability**: a streak you haven't defended today turns
+  amber with a callout naming what's at stake. There is deliberately no
+  freeze or grace day — miss a day and it really does reset to zero.
+- **Weekly target you set yourself**: pick 3, 5, 7 or 10 lessons a week;
+  progress counts lessons completed since Monday.
+- **Autoplay the next lesson**: finishing a lesson raises an end card with
+  the next one and an 8-second countdown (or "Play now" / "Stay here").
+  The countdown is cancelled if you navigate away.
+- **Module milestone**: finishing the last lesson in a module raises a
+  celebration card with gold burst rings, your totals, and a jump into the
+  next module.
 - **Module shelf**: horizontally scrollable, scroll-snapped module cards
   with preview art. A plain vertical mouse wheel scrolls it sideways.
 - **Module picture as background**: entering a module fades its preview art
@@ -104,7 +117,9 @@ status for everyone.
 `public/assets/video/*.webm` are generated stand-in clips and
 `public/assets/modules/*.svg` is generated abstract art, both there so the
 app is usable before you have real content. Swap the `videoUrl` and
-`image` values in `data/curriculum.js` for your real files.
+`image` values in `data/curriculum.js` for your real files. Lesson titles
+under each module are placeholders too — the module names are yours, the
+lessons inside them are for you to rename.
 
 ## Security notes for going further than local dev
 
@@ -131,5 +146,9 @@ Good next steps, in roughly increasing order of effort:
 - **Coach vs. client roles**: add a `role` column to `users` and an admin
   view for editing curriculum content through the UI instead of
   hand-editing `data/curriculum.js`.
-- **Autoplay the next lesson** when one completes, so a module can be
-  watched straight through.
+- **Restrict forward-seeking** if you ever want completion to be
+  unfakeable — right now the scrubber is free, so a lesson can be skipped
+  to the end.
+- **Notifications / email nudges** for a streak that's about to break;
+  that's where streak mechanics get most of their pull, and it needs an
+  email or push provider.

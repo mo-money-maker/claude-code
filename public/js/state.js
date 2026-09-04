@@ -19,7 +19,18 @@ function todayKey(d = new Date()) {
   ).padStart(2, "0")}`;
 }
 
-let state = { watched: {}, progress: {}, ritualCompletion: {}, activity: {} };
+// Monday as the start of the week.
+function startOfWeek(d = new Date()) {
+  const day = new Date(d);
+  const offset = (day.getDay() + 6) % 7;
+  day.setDate(day.getDate() - offset);
+  day.setHours(0, 0, 0, 0);
+  return day;
+}
+
+export const WEEKLY_GOAL_OPTIONS = [3, 5, 7, 10];
+
+let state = { watched: {}, progress: {}, ritualCompletion: {}, activity: {}, weeklyGoal: 3 };
 let ready = false;
 let saveTimer = null;
 
@@ -30,6 +41,7 @@ export async function initState() {
     progress: remote.progress || {},
     ritualCompletion: remote.ritualCompletion || {},
     activity: remote.activity || {},
+    weeklyGoal: remote.weeklyGoal || 3,
   };
   ready = true;
 }
@@ -136,6 +148,40 @@ export function getStreak() {
     day.setDate(day.getDate() - 1);
   }
   return streak;
+}
+
+// A streak you've built but haven't defended today is "at risk" — there is
+// deliberately no freeze or grace day, so missing today really does reset
+// it to zero.
+export function getStreakStatus() {
+  const streak = getStreak();
+  const active = !!state.activity[todayKey()];
+  return { streak, atRisk: streak > 0 && !active, active };
+}
+
+// ---------- Weekly goal (set by the user) ----------
+
+export function getWeeklyGoal() {
+  return state.weeklyGoal;
+}
+
+export function setWeeklyGoal(target) {
+  state.weeklyGoal = target;
+  flush();
+}
+
+export function getWeekProgress() {
+  const day = startOfWeek();
+  const today = new Date();
+  let lessons = 0;
+
+  while (day <= today) {
+    const entry = state.activity[todayKey(day)];
+    if (entry) lessons += entry.lessons || 0;
+    day.setDate(day.getDate() + 1);
+  }
+
+  return { lessons, target: state.weeklyGoal };
 }
 
 export function getTodayCounts() {

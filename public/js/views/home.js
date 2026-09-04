@@ -3,30 +3,82 @@
 
 import { modules, rituals } from "../../data/curriculum.js";
 import {
-  getStreak,
+  getStreakStatus,
   getCourseTotals,
   getModuleProgress,
   getProgress,
   getGoals,
   getResumeTarget,
+  getWeeklyGoal,
+  setWeeklyGoal,
+  getWeekProgress,
   isRitualCompleteToday,
+  WEEKLY_GOAL_OPTIONS,
 } from "../state.js";
 import { el, statusRing, progressBar, setBackdrop } from "../ui.js";
 import { go } from "../router.js";
 
-function statTile(value, label) {
-  return el("div", "stat", [el("span", "stat-value", String(value)), el("span", "stat-label", label)]);
+function statTile(value, label, className) {
+  return el("div", "stat" + (className ? ` ${className}` : ""), [
+    el("span", "stat-value", String(value)),
+    el("span", "stat-label", label),
+  ]);
 }
 
 function statRow() {
   const course = getCourseTotals(modules);
   const ritualsDone = rituals.filter((r) => isRitualCompleteToday(r.id)).length;
-  const streak = getStreak();
+  const { streak, atRisk } = getStreakStatus();
 
   return el("div", "stat-row", [
-    statTile(streak, streak === 1 ? "day streak" : "day streak"),
+    statTile(streak, "day streak", atRisk ? "is-at-risk" : streak > 0 ? "is-live" : ""),
     statTile(`${course.watchedCount}/${course.total}`, "lessons watched"),
     statTile(`${ritualsDone}/${rituals.length}`, "rituals today"),
+  ]);
+}
+
+// No freeze, no grace day — the point is that today is the only day that
+// can defend the streak.
+function streakCallout() {
+  const { streak, atRisk } = getStreakStatus();
+  if (!atRisk) return null;
+
+  return el("div", "callout", [
+    el("span", "callout-strong", `${streak}-day streak on the line.`),
+    el("span", "callout-text", " Watch one lesson today or it resets to zero."),
+  ]);
+}
+
+function weeklyGoalCard() {
+  const { lessons, target } = getWeekProgress();
+  const hit = lessons >= target;
+
+  const options = el(
+    "div",
+    "target-options",
+    WEEKLY_GOAL_OPTIONS.map((n) => {
+      const btn = el("button", "target" + (n === getWeeklyGoal() ? " is-active" : ""), String(n));
+      btn.type = "button";
+      btn.addEventListener("click", () => {
+        setWeeklyGoal(n);
+        renderHome(document.getElementById("view"));
+      });
+      return btn;
+    })
+  );
+
+  return el("section", "weekly" + (hit ? " is-hit" : ""), [
+    el("div", "weekly-head", [
+      el("div", "weekly-titles", [
+        el("h2", "section-label", "This week"),
+        el("span", "weekly-count", [
+          el("strong", null, String(lessons)),
+          ` of ${target} lessons`,
+        ]),
+      ]),
+      el("div", "weekly-target", [el("span", "target-label", "Weekly target"), options]),
+    ]),
+    progressBar(target ? lessons / target : 0),
   ]);
 }
 
@@ -72,8 +124,11 @@ function moduleCard(module) {
   const art = el("div", "module-art");
   art.style.backgroundImage = `url("${module.image}")`;
 
+  const artWrap = el("div", "module-art-wrap", [art]);
+  if (complete) artWrap.append(el("span", "module-badge", "Complete"));
+
   card.append(
-    art,
+    artWrap,
     el("div", "module-info", [
       el("h3", "module-name", module.title),
       el("p", "module-blurb", module.blurb),
@@ -131,6 +186,8 @@ export function renderHome(view) {
   view.replaceChildren(
     el("div", "home", [
       statRow(),
+      streakCallout(),
+      weeklyGoalCard(),
       goalList(),
       resumeRow(),
       moduleShelf(),

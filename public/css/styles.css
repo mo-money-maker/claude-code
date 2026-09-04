@@ -9,6 +9,15 @@
 
   --font-serif: "Fraunces", serif;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Gold used as a material rather than a flat colour */
+  --gold-sheen: linear-gradient(135deg, #E3C77A 0%, #C9A24B 45%, #8C6E2F 100%);
+  --gold-edge: linear-gradient(140deg, rgba(227, 199, 122, 0.7), rgba(201, 162, 75, 0.18) 45%, rgba(201, 162, 75, 0.05));
+
+  /* Frosted panel: translucent fill + blur, so the art behind shows through */
+  --glass: rgba(23, 23, 26, 0.62);
+  --glass-strong: rgba(20, 20, 23, 0.82);
+  --blur: blur(14px);
 }
 
 * { box-sizing: border-box; }
@@ -62,6 +71,20 @@ button {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(11, 11, 13, 0.5), rgba(11, 11, 13, 0.88));
+}
+
+/* Film grain. Static SVG noise, tiled — keeps large flat areas from
+   looking like dead pixels without costing anything at runtime.
+   soft-light rather than a flat overlay: mid-grey noise leaves the
+   underlying tone alone instead of veiling the page and greying the text. */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 /* The infinity mark — large, centred, barely there. */
@@ -148,6 +171,12 @@ button {
   width: 100%;
   max-width: 880px;
   margin: 0 auto;
+  animation: view-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
 }
 
 .section-label {
@@ -178,8 +207,9 @@ button {
 
 .bar-fill {
   height: 100%;
-  background: var(--gold);
+  background: var(--gold-sheen);
   border-radius: 2px;
+  box-shadow: 0 0 10px -2px rgba(201, 162, 75, 0.6);
   transition: width 0.3s ease;
 }
 
@@ -211,11 +241,14 @@ button {
 
 .stat-value {
   font-family: var(--font-serif);
-  font-size: 34px;
+  font-size: 38px;
   font-weight: 600;
-  color: var(--gold-bright);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  background: var(--gold-sheen);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .stat-label {
@@ -223,6 +256,121 @@ button {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-dim);
+}
+
+/* A live streak glows; one you haven't defended today burns amber. */
+.stat.is-live .stat-value { filter: drop-shadow(0 0 14px rgba(201, 162, 75, 0.35)); }
+
+.stat.is-at-risk .stat-value {
+  background: linear-gradient(135deg, #F0B429, #C9822B);
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: at-risk 2.4s ease-in-out infinite;
+}
+
+.stat.is-at-risk .stat-label { color: #D9A441; }
+
+@keyframes at-risk {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(240, 180, 41, 0.25)); }
+  50% { filter: drop-shadow(0 0 18px rgba(240, 180, 41, 0.5)); }
+}
+
+.callout {
+  max-width: 520px;
+  margin: -18px auto 0;
+  text-align: center;
+  font-size: 13.5px;
+  line-height: 1.55;
+  padding: 12px 18px;
+  border-radius: 10px;
+  color: var(--text-dim);
+  background: rgba(240, 180, 41, 0.06);
+  border: 1px solid rgba(240, 180, 41, 0.28);
+}
+
+.callout-strong { color: #F0B429; font-weight: 600; }
+
+/* Weekly goal */
+
+.weekly {
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 18px 20px 20px;
+  border-radius: 14px;
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hairline of gold along the top edge — the "gradient border" trick.
+   z-index keeps it above the card art, which paints after it. */
+.weekly::before,
+.module-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  z-index: 2;
+  background: var(--gold-edge);
+}
+
+.weekly.is-hit { border-color: rgba(201, 162, 75, 0.45); }
+
+.weekly-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.weekly-titles .section-label { margin-bottom: 6px; }
+
+.weekly-count { font-size: 14px; color: var(--text-dim); }
+.weekly-count strong {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--gold-bright);
+  margin-right: 2px;
+}
+
+.weekly-target { text-align: right; }
+
+.target-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.target-options { display: flex; gap: 5px; }
+
+.target {
+  width: 30px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  transition: all 0.15s ease;
+}
+
+.target:hover { border-color: var(--gold); color: var(--text); }
+
+.target.is-active {
+  color: var(--bg);
+  background: var(--gold-sheen);
+  border-color: transparent;
 }
 
 .goals { max-width: 460px; margin: 0 auto; width: 100%; }
@@ -241,15 +389,19 @@ button {
   align-items: center;
   gap: 12px;
   font-size: 14px;
-  padding: 10px 14px;
+  padding: 11px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(23, 23, 26, 0.6);
+  border-radius: 9px;
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  transition: border-color 0.2s ease;
 }
 
 .goal.is-done {
-  border-color: rgba(201, 162, 75, 0.5);
+  border-color: rgba(201, 162, 75, 0.55);
   color: var(--gold-bright);
+  background: linear-gradient(100deg, rgba(201, 162, 75, 0.1), rgba(23, 23, 26, 0.62) 55%);
 }
 
 .goal-label { flex: 1; }
@@ -303,29 +455,68 @@ button {
 .shelf::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .module-card {
-  flex: 0 0 268px;
+  position: relative;
+  flex: 0 0 280px;
   scroll-snap-align: center;
   text-align: left;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
-  background: var(--panel);
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease,
+    box-shadow 0.25s ease;
 }
 
 .module-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(201, 162, 75, 0.55);
+  transform: translateY(-6px);
+  border-color: rgba(201, 162, 75, 0.6);
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.9), 0 0 26px -8px rgba(201, 162, 75, 0.35);
 }
 
-.module-card:active { transform: translateY(-1px) scale(0.99); }
+.module-card:active { transform: translateY(-2px) scale(0.99); }
 
-.module-card.is-complete { border-color: rgba(201, 162, 75, 0.5); }
+.module-card.is-complete { border-color: rgba(201, 162, 75, 0.55); }
+
+.module-art-wrap {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+}
 
 .module-art {
-  height: 132px;
+  position: absolute;
+  inset: 0;
   background-size: cover;
   background-position: center;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Slow push-in on hover, the way a streaming tile behaves */
+.module-card:hover .module-art { transform: scale(1.07); }
+
+/* Fade the art into the card body instead of a hard edge */
+.module-art-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 45%, rgba(20, 20, 23, 0.92));
+}
+
+.module-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--gold-sheen);
+  padding: 4px 8px;
+  border-radius: 20px;
 }
 
 .module-info { padding: 14px 16px 16px; }
@@ -377,9 +568,12 @@ button {
   gap: 12px;
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(23, 23, 26, 0.7);
+  border-radius: 11px;
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   text-align: left;
+  transition: border-color 0.2s ease, transform 0.14s ease;
 }
 
 .ritual:hover { border-color: rgba(201, 162, 75, 0.5); }
@@ -387,7 +581,7 @@ button {
 
 .ritual.is-complete {
   border-color: var(--gold);
-  background: linear-gradient(180deg, rgba(201, 162, 75, 0.09), transparent 65%), rgba(23, 23, 26, 0.7);
+  background: linear-gradient(180deg, rgba(201, 162, 75, 0.12), transparent 65%), var(--glass);
 }
 
 .ritual-body { display: flex; flex-direction: column; gap: 3px; }
@@ -415,9 +609,10 @@ button {
 
 .module-heading {
   font-family: var(--font-serif);
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 600;
   margin: 0 0 6px 0;
+  letter-spacing: -0.01em;
 }
 
 .module-sub {
@@ -431,22 +626,41 @@ button {
 .lesson-list { display: flex; flex-direction: column; gap: 8px; }
 
 .lesson {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 14px;
   width: 100%;
-  padding: 15px 16px;
+  padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(23, 23, 26, 0.72);
+  border-radius: 11px;
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
   text-align: left;
+  overflow: hidden;
   transition: transform 0.14s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
-.lesson:hover {
-  border-color: rgba(201, 162, 75, 0.55);
-  background: rgba(30, 30, 34, 0.8);
+/* Gold wipes in from the left on hover */
+.lesson::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(201, 162, 75, 0.14), transparent 42%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
 }
+
+.lesson:hover::before { opacity: 1; }
+
+.lesson:hover {
+  border-color: rgba(201, 162, 75, 0.6);
+  transform: translateX(3px);
+}
+
+.lesson.is-complete { border-color: rgba(201, 162, 75, 0.32); }
 
 .lesson:active { transform: scale(0.995); }
 
@@ -467,8 +681,9 @@ button {
 .player { padding-top: 24px; }
 
 .player-stage {
+  position: relative;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   background: #000;
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
@@ -476,8 +691,111 @@ button {
 
 .player-stage.is-complete {
   border-color: var(--gold);
-  box-shadow: 0 0 26px rgba(201, 162, 75, 0.16);
+  box-shadow: 0 0 40px -6px rgba(201, 162, 75, 0.3);
 }
+
+/* ---------- End cards (up next / milestone) ---------- */
+
+.endcard {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(9, 9, 11, 0.86);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  animation: endcard-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes endcard-in {
+  from { opacity: 0; transform: scale(1.02); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.endcard-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.endcard-title {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 600;
+  margin: 4px 0 2px;
+  max-width: 90%;
+}
+
+.endcard-sub { font-size: 13px; color: var(--text-dim); margin: 0 0 6px; }
+
+.endcard-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-bright);
+  font-weight: 600;
+}
+
+.endcard-actions { display: flex; gap: 10px; margin-top: 12px; }
+
+.endcard-primary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--gold-sheen);
+  padding: 10px 20px;
+  border-radius: 8px;
+}
+
+.endcard-primary:hover { filter: brightness(1.08); }
+.endcard-primary:active { transform: scale(0.97); }
+
+.endcard-secondary {
+  font-size: 13px;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.endcard-secondary:hover { border-color: var(--gold); color: var(--text); }
+
+/* Milestone: gold rings expanding once behind the text */
+.burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.burst-ring {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  opacity: 0;
+  animation: burst 2.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.burst-ring:nth-child(2) { animation-delay: 0.22s; }
+.burst-ring:nth-child(3) { animation-delay: 0.44s; }
+
+@keyframes burst {
+  0% { transform: scale(0.4); opacity: 0.75; }
+  100% { transform: scale(4.6); opacity: 0; }
+}
+
+.endcard.is-milestone { background: rgba(9, 9, 11, 0.9); }
 
 .player-video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
 
@@ -605,6 +923,7 @@ button {
 .auth-submit:disabled { opacity: 0.6; cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
-  .infinity-trace { animation: none; }
+  .infinity-trace, .burst-ring, .stat.is-at-risk .stat-value { animation: none; }
+  .home, .module-view, .player, .endcard { animation: none; }
   *, .backdrop, .module-card, .bar-fill { transition: none !important; }
 }

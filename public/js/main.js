@@ -3,7 +3,7 @@ import { initState, flush } from "./state.js";
 import { route, start } from "./router.js";
 import { renderHome } from "./views/home.js";
 import { renderModule } from "./views/module.js";
-import { renderLesson, renderRitual } from "./views/player.js";
+import { renderLesson, renderRitual, cancelCountdown } from "./views/player.js";
 
 async function boot() {
   let user;
@@ -28,7 +28,10 @@ async function boot() {
   });
 
   // Any pending playback position is written out before the view changes.
-  window.addEventListener("hashchange", () => flush());
+  window.addEventListener("hashchange", () => {
+    cancelCountdown();
+    flush();
+  });
   window.addEventListener("pagehide", () => flush({ beacon: true }));
 
   route("/", () => renderHome(view));
