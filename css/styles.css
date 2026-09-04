@@ -1,0 +1,314 @@
+:root {
+  --bg: #0B0B0D;
+  --panel: #17171A;
+  --border: #2B2B30;
+  --gold: #C9A24B;
+  --gold-bright: #E3C77A;
+  --text: #EDEAE3;
+  --text-dim: #9C9AA3;
+
+  --font-serif: "Fraunces", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --rail-width: 300px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ---------- Left rail ---------- */
+
+.rail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--rail-width);
+  height: 100vh;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.rail-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.rail-brand {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.module-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.module {
+  border-bottom: 1px solid var(--border);
+}
+
+.module-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  text-align: left;
+}
+
+.module-header:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.module-chevron {
+  font-size: 11px;
+  color: var(--text-dim);
+  transition: transform 0.15s ease;
+  width: 10px;
+}
+
+.module.is-collapsed .module-chevron {
+  transform: rotate(-90deg);
+}
+
+.module-title {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.module-progress {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.submodule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 20px 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.module.is-collapsed .submodule-list {
+  display: none;
+}
+
+.submodule-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 6px 8px;
+  border-radius: 4px;
+}
+
+.submodule-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.submodule-title {
+  flex: 1;
+  text-align: left;
+  font-size: 13.5px;
+  color: var(--text-dim);
+}
+
+.submodule-row:hover .submodule-title {
+  color: var(--text);
+}
+
+/* Watched-status ring: hollow by default, fills gold when watched. */
+.watch-ring {
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.watch-ring:hover {
+  border-color: var(--gold);
+}
+
+.watch-ring.is-watched {
+  background: var(--gold-bright);
+  border-color: var(--gold);
+}
+
+/* ---------- Main panel ---------- */
+
+.main {
+  margin-left: var(--rail-width);
+  flex: 1;
+  padding: 40px 48px;
+  max-width: 920px;
+}
+
+.panel-section {
+  margin-bottom: 48px;
+}
+
+.section-title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 18px 0;
+}
+
+/* Daily Rituals */
+
+.ritual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.ritual-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.ritual-card:hover {
+  border-color: var(--gold);
+}
+
+.ritual-card.is-complete {
+  border-color: var(--gold);
+  background: linear-gradient(180deg, rgba(201, 162, 75, 0.08), transparent 60%), var(--panel);
+}
+
+.ritual-card .watch-ring {
+  margin-top: 3px;
+}
+
+.ritual-period {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--gold-bright);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.ritual-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 500;
+  margin: 0 0 4px 0;
+}
+
+.ritual-subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+/* Continue Watching */
+
+.continue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.empty-state {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.continue-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.continue-thumb {
+  width: 72px;
+  height: 44px;
+  min-width: 72px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--border), var(--bg));
+}
+
+.continue-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.continue-breadcrumb {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.continue-title {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.continue-resume {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--gold-bright);
+  padding: 8px 16px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.continue-resume:hover {
+  background: var(--gold);
+}
