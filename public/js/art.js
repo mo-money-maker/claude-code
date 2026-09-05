@@ -103,33 +103,82 @@ function seeded(seed) {
   };
 }
 
+// Marble is built in three passes: a wide blurred bloom, the vein itself,
+// then hairline branches splitting off it. One pass alone reads as a
+// scribble; three read as stone.
 function marbleVeins(rand, w = 1200, h = 800) {
   let out = "";
-  for (let i = 0; i < 5; i++) {
+
+  for (let i = 0; i < 7; i++) {
     const y = rand() * h;
-    const y2 = y + (rand() - 0.5) * (h * 0.33);
+    const y2 = y + (rand() - 0.5) * (h * 0.36);
     const cy1 = rand() * h;
     const cy2 = rand() * h;
-    out += `<path d="M -40 ${y.toFixed(0)} C ${(w * 0.25).toFixed(0)} ${cy1.toFixed(0)}, ${(w * 0.67).toFixed(0)} ${cy2.toFixed(0)}, ${(w + 40).toFixed(0)} ${y2.toFixed(0)}"
-      fill="none" stroke="url(#foil)" stroke-width="${(0.6 + rand() * 1.6).toFixed(2)}"
-      opacity="${(0.1 + rand() * 0.16).toFixed(2)}"/>`;
+    const d = `M -40 ${y.toFixed(0)} C ${(w * 0.25).toFixed(0)} ${cy1.toFixed(0)}, ${(w * 0.67).toFixed(0)} ${cy2.toFixed(0)}, ${(w + 40).toFixed(0)} ${y2.toFixed(0)}`;
+    const weight = 0.5 + rand() * 1.8;
+
+    // bloom under the vein
+    out += `<path d="${d}" fill="none" stroke="#C9A24B" stroke-width="${(weight * 5).toFixed(1)}"
+      opacity="${(0.05 + rand() * 0.06).toFixed(3)}" filter="url(#softGlow)"/>`;
+    // the vein
+    out += `<path d="${d}" fill="none" stroke="url(#foil)" stroke-width="${weight.toFixed(2)}"
+      opacity="${(0.16 + rand() * 0.2).toFixed(2)}"/>`;
+
+    // branches peeling off it
+    for (let b = 0; b < 2; b++) {
+      const bx = w * (0.2 + rand() * 0.6);
+      const by = y + (y2 - y) * ((bx + 40) / (w + 80));
+      const len = w * (0.08 + rand() * 0.16);
+      const drop = (rand() - 0.5) * h * 0.2;
+      out += `<path d="M ${bx.toFixed(0)} ${by.toFixed(0)} q ${(len / 2).toFixed(0)} ${(drop / 2).toFixed(0)} ${len.toFixed(0)} ${drop.toFixed(0)}"
+        fill="none" stroke="url(#foil)" stroke-width="${(weight * 0.4).toFixed(2)}"
+        opacity="${(0.08 + rand() * 0.12).toFixed(2)}"/>`;
+    }
   }
   return out;
 }
 
+// Each spark is a four-point flare with long thin rays and a bloom behind
+// it, rather than a solid diamond.
 function sparkles(rand, w = 1200, h = 800) {
   let out = "";
-  for (let i = 0; i < 7; i++) {
-    const x = 80 + rand() * (w - 160);
-    const y = 60 + rand() * (h - 120);
-    const s = 6 + rand() * 16;
-    out += `<path d="M ${x} ${y - s} Q ${x + s * 0.16} ${y - s * 0.16} ${x + s} ${y}
-      Q ${x + s * 0.16} ${y + s * 0.16} ${x} ${y + s}
-      Q ${x - s * 0.16} ${y + s * 0.16} ${x - s} ${y}
-      Q ${x - s * 0.16} ${y - s * 0.16} ${x} ${y - s} Z"
-      fill="#F5E6A8" opacity="${(0.25 + rand() * 0.5).toFixed(2)}"/>`;
+  for (let i = 0; i < 11; i++) {
+    const x = 70 + rand() * (w - 140);
+    const y = 50 + rand() * (h - 100);
+    const s = 5 + rand() * 18;
+    const o = 0.3 + rand() * 0.55;
+    const waist = s * 0.11;
+
+    out += `<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="${(s * 1.5).toFixed(1)}"
+      fill="#E3C77A" opacity="${(o * 0.28).toFixed(2)}" filter="url(#softGlow)"/>`;
+    out += `<path d="M ${x} ${y - s} Q ${x + waist} ${y - waist} ${x + s} ${y}
+      Q ${x + waist} ${y + waist} ${x} ${y + s}
+      Q ${x - waist} ${y + waist} ${x - s} ${y}
+      Q ${x - waist} ${y - waist} ${x} ${y - s} Z"
+      fill="#FDF6DC" opacity="${o.toFixed(2)}"/>`;
+    // the long cross ray
+    out += `<path d="M ${x} ${(y - s * 2.1).toFixed(1)} L ${x} ${(y + s * 2.1).toFixed(1)}
+      M ${(x - s * 2.1).toFixed(1)} ${y} L ${(x + s * 2.1).toFixed(1)} ${y}"
+      stroke="#F7EBBE" stroke-width="0.7" opacity="${(o * 0.5).toFixed(2)}"/>`;
   }
   return out;
+}
+
+// An engraved double rule with corner diamonds, like the plate edge on the
+// brand art.
+function ornateFrame(w, h) {
+  const m = Math.round(Math.min(w, h) * 0.045);
+  const m2 = m + Math.round(Math.min(w, h) * 0.016);
+  const corner = (cx, cy) =>
+    `<rect x="${cx - 5}" y="${cy - 5}" width="10" height="10" transform="rotate(45 ${cx} ${cy})"
+       fill="url(#foil)" opacity="0.75"/>`;
+
+  return `
+    <rect x="${m}" y="${m}" width="${w - m * 2}" height="${h - m * 2}"
+      fill="none" stroke="url(#foil)" stroke-width="1.5" opacity="0.4"/>
+    <rect x="${m2}" y="${m2}" width="${w - m2 * 2}" height="${h - m2 * 2}"
+      fill="none" stroke="url(#foil)" stroke-width="0.7" opacity="0.22"/>
+    ${corner(m, m)}${corner(w - m, m)}${corner(m, h - m)}${corner(w - m, h - m)}`;
 }
 
 // Greedy wrap so long module names still sit as balanced gold caps.
@@ -156,13 +205,19 @@ function titleBlock(title, { cx, baseline, maxChars, sizes }) {
   const lead = size * 1.18;
   const top = baseline - ((lines.length - 1) * lead) / 2;
 
+  // Three passes per line — a dropped shadow, the foil body, and a pale
+  // highlight offset up — which is what makes the type look stamped
+  // rather than filled.
   return lines
-    .map(
-      (line, i) =>
-        `<text x="${cx}" y="${(top + i * lead).toFixed(0)}" text-anchor="middle" fill="url(#foil)"
-           font-family="${SERIF}" font-size="${size}" font-weight="700"
-           letter-spacing="${(size * 0.09).toFixed(1)}">${escapeXml(line)}</text>`
-    )
+    .map((line, i) => {
+      const y = top + i * lead;
+      const common = `text-anchor="middle" font-family="${SERIF}" font-size="${size}" font-weight="700" letter-spacing="${(size * 0.09).toFixed(1)}"`;
+      const text = escapeXml(line);
+      return `
+        <text x="${cx}" y="${(y + size * 0.045).toFixed(1)}" ${common} fill="url(#foilDeep)" opacity="0.9">${text}</text>
+        <text x="${cx}" y="${y.toFixed(0)}" ${common} fill="url(#foil)" filter="url(#glow)">${text}</text>
+        <text x="${cx}" y="${(y - size * 0.022).toFixed(1)}" ${common} fill="#FDF6DC" opacity="0.3">${text}</text>`;
+    })
     .join("");
 }
 
@@ -211,18 +266,44 @@ export function moduleArt(module, index = 0, shapeName = "card") {
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
   <defs>
+    <!-- Foil has a hot edge, a body, a shadow and a second highlight, so
+         it reads as metal catching light rather than a flat gold. -->
     <linearGradient id="foil" x1="0" y1="0" x2="0.6" y2="1">
-      <stop offset="0" stop-color="#F7EBBE"/>
-      <stop offset="0.28" stop-color="#E3C77A"/>
-      <stop offset="0.55" stop-color="#C9A24B"/>
-      <stop offset="0.78" stop-color="#8C6E2F"/>
-      <stop offset="1" stop-color="#E3C77A"/>
+      <stop offset="0" stop-color="#FDF6DC"/>
+      <stop offset="0.14" stop-color="#F7EBBE"/>
+      <stop offset="0.3" stop-color="#E3C77A"/>
+      <stop offset="0.47" stop-color="#C9A24B"/>
+      <stop offset="0.62" stop-color="#7C5F26"/>
+      <stop offset="0.78" stop-color="#C9A24B"/>
+      <stop offset="0.92" stop-color="#F3E3B2"/>
+      <stop offset="1" stop-color="#9A7833"/>
     </linearGradient>
+    <linearGradient id="foilDeep" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#6B5220"/>
+      <stop offset="1" stop-color="#2A2110"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="14" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="26"/>
+    </filter>
+    <!-- Fine tooth over the whole plate so it isn't a flat vector fill -->
+    <filter id="tooth" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" result="n"/>
+      <feColorMatrix in="n" type="saturate" values="0"/>
+    </filter>
     <radialGradient id="halo" cx="0.5" cy="0.44" r="0.62">
       <stop offset="0" stop-color="#C9A24B" stop-opacity="0.4"/>
       <stop offset="0.6" stop-color="#C9A24B" stop-opacity="0.1"/>
       <stop offset="1" stop-color="#C9A24B" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#17171C"/>
+      <stop offset="0.45" stop-color="#0C0C0F"/>
+      <stop offset="1" stop-color="#141419"/>
+    </linearGradient>
     <radialGradient id="vig" cx="0.5" cy="0.5" r="0.75">
       <stop offset="0.55" stop-color="#000" stop-opacity="0"/>
       <stop offset="1" stop-color="#000" stop-opacity="0.85"/>
@@ -236,11 +317,13 @@ export function moduleArt(module, index = 0, shapeName = "card") {
   </defs>
 
   <rect width="${w}" height="${h}" fill="#08080A"/>
+  <rect width="${w}" height="${h}" fill="url(#stone)"/>
   ${marbleVeins(rand, w, h)}
   <rect width="${w}" height="${h}" fill="url(#halo)"/>
   <g transform="translate(${shape.geo.dx} ${shape.geo.dy}) scale(${shape.geo.scale})">${motif()}</g>
+  ${ornateFrame(w, h)}
   ${sparkles(rand, w, h)}
-  ${crest(w / 2, shape.crest.y, shape.crest.width)}
+  <g filter="url(#glow)">${crest(w / 2, shape.crest.y, shape.crest.width)}</g>
 
   <line x1="${shape.rule.x1}" y1="${shape.rule.y}" x2="${shape.rule.x2}" y2="${shape.rule.y}"
         stroke="url(#foil)" stroke-width="1.4" opacity="0.55"/>
@@ -249,6 +332,7 @@ export function moduleArt(module, index = 0, shapeName = "card") {
 
   ${titleBlock(module.title, { cx: w / 2, ...shape.title })}
   <rect width="${w}" height="${h}" fill="url(#vig)"/>
+  <rect width="${w}" height="${h}" filter="url(#tooth)" opacity="0.055"/>
 </svg>`;
 
   return `data:image/svg+xml,${encodeURIComponent(svg.replace(/\s+/g, " "))}`;

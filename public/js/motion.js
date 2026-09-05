@@ -57,6 +57,36 @@ function ensureObserver() {
 }
 
 /**
+ * Drifts the standing geometry against the scroll. Reads scroll position
+ * inside a rAF and writes a CSS custom property consumed by a transform,
+ * so nothing here triggers layout.
+ */
+export function startParallax() {
+  if (reduced) return;
+
+  const sanctum = document.querySelector(".sanctum");
+  if (!sanctum) return;
+
+  let queued = false;
+  const apply = () => {
+    queued = false;
+    sanctum.style.setProperty("--parallax", `${window.scrollY * -0.08}px`);
+  };
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(apply);
+    },
+    { passive: true }
+  );
+
+  apply();
+}
+
+/**
  * Reveal every [data-reveal] inside `root` as it scrolls into view.
  * Siblings stagger via the --stagger index each element carries.
  */

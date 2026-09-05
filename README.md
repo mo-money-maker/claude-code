@@ -31,7 +31,8 @@ public/                Frontend — served as static files, no build step
   data/curriculum.js      Your content: modules, lessons, rituals, mantras
   assets/video/*.webm      Generated placeholder lesson clips
   js/art.js                 Generates each module's gold key art
-  js/motion.js               Scroll reveals, count-ups, word-split headings
+  js/motion.js               Scroll reveals, count-ups, headings, parallax
+  js/transition.js            Shared-element zoom between row and hero
   js/api.js                   fetch wrapper for the backend
   js/state.js                  In-memory state, synced to the server
   js/router.js                  Hash router (#/, #/m/:id, #/w/:mid/:sid, #/r/:id)
@@ -128,9 +129,14 @@ Frosted panels, a gold hairline along card tops, film grain in soft-light,
 and a slowly turning seed-of-life behind everything.
 
 **Module key art is generated, not drawn** (`js/art.js`). Each module gets
-marble veining, a sacred-geometry motif, the infinity crest and its own
-title set in gold caps, seeded from its position so it's stable between
-loads. Two canvases are produced — a card for rows and backdrops, a wide
+marble veining built in three passes (a blurred bloom, the vein, hairline
+branches), a sacred-geometry motif, an engraved double frame with corner
+diamonds, four-point flares with long rays, the glowing infinity crest,
+and its title stamped in three passes — a dropped shadow, the foil body
+and a pale highlight — so the type reads as embossed metal rather than
+filled shapes. A turbulence pass over the whole plate keeps it from
+looking like flat vector. All of it is seeded from the module's position,
+so a given module always renders identically. Two canvases are produced — a card for rows and backdrops, a wide
 banner for the module hero — so lettering is never cropped by its frame.
 Add a module to `data/curriculum.js` and it is on-brand immediately; set
 `image: "assets/..."` on a module to use your own artwork instead, and
@@ -139,15 +145,37 @@ Add a module to `data/curriculum.js` and it is on-brand immediately; set
 
 ## Motion
 
-All motion is opacity and transform only, so nothing triggers layout.
-`js/motion.js` handles it: scroll reveals with a stagger, counters that
-count up when they appear, and headings that rise a word at a time.
+Every animation moves `transform` or `opacity` and nothing else, so none
+of it can trigger layout. One easing curve — `cubic-bezier(0.16, 1, 0.3,
+1)`, exposed as `--ease` — is used everywhere, which is what makes
+separate pieces feel like one system. Micro-interactions run 200-350ms,
+entrances 600-800ms.
+
+- **Ambient**: a checkerboard in the palette's own tones drifting under a
+  slow breathing aura, the seed-of-life turning behind it and drifting
+  against the scroll (`startParallax`, rAF-throttled, writes a custom
+  property consumed by a transform).
+- **Arrival**: the page opens with the same enlarge-and-settle used by the
+  hover preview, so first paint reads as opening rather than waiting.
+- **Rows**: hovering lifts and scales a row while its blurb cross-fades to
+  the lessons inside. Both layers are stacked in one box, so revealing
+  detail never changes the row's height and nothing below it shifts.
+- **Zoom** (`js/transition.js`): clicking a module flies its artwork into
+  the hero and back out again on the way home. It's FLIP — measure, render,
+  measure, animate the difference. The aspect changes on the way, so the
+  ghost is two nested layers: an outer frame that takes the non-uniform
+  scale and clips, and an inner image counter-scaled by exactly the
+  inverse, which keeps the picture square while the window around it grows.
+- **Menu**: absolutely positioned and animated with transform/opacity, so
+  opening it never moves the bar underneath.
 
 Scroll reveals carry a failsafe. An IntersectionObserver only reports what
 it samples, so a jump-scroll can skip an element and leave it invisible
 forever; a scroll/resize sweep reveals anything at or above the fold
-regardless. Everything collapses to no motion under
-`prefers-reduced-motion`.
+regardless.
+
+Everything collapses under `prefers-reduced-motion`: animations off,
+transforms dropped, and state changes fall back to plain opacity.
 
 ## Placeholder media
 

@@ -18,6 +18,7 @@ import {
 import { el, statusRing, progressBar, setBackdrop, sunMoon } from "../ui.js";
 import { artFor } from "../art.js";
 import { revealIn, stagger, countUp } from "../motion.js";
+import { beginZoom, completeZoom, takeReturnTarget } from "../transition.js";
 import { go } from "../router.js";
 
 // One line per day, chosen by the date — no scheduling, never repeats
@@ -150,6 +151,7 @@ function moduleRow(module, index) {
   const row = el("button", "module-row" + (complete ? " is-complete" : ""));
   row.type = "button";
   row.dataset.reveal = "";
+  row.dataset.moduleId = module.id;
   row.style.setProperty("--stagger", String(index % 4));
 
   const art = el("div", "row-art");
@@ -158,12 +160,28 @@ function moduleRow(module, index) {
   const artWrap = el("div", "row-art-wrap", [art, el("span", "row-sheen")]);
   if (complete) artWrap.append(el("span", "module-badge", "Complete"));
 
+  // Hover preview, Netflix-style: the blurb cross-fades to the lessons
+  // inside. Both layers are stacked and only opacity/transform move, so
+  // the row never changes height and nothing below it shifts.
+  const preview = el(
+    "div",
+    "row-preview",
+    module.submodules.slice(0, 3).map((s, i) => {
+      const chip = el("span", "row-chip", s.title);
+      chip.style.setProperty("--stagger", String(i));
+      return chip;
+    })
+  );
+  if (module.submodules.length > 3) {
+    preview.append(el("span", "row-chip is-more", `+${module.submodules.length - 3} more`));
+  }
+
   row.append(
     artWrap,
     el("div", "row-body", [
       el("span", "row-kicker", module.kicker || ""),
       el("h3", "row-title", module.title),
-      el("p", "row-blurb", module.blurb),
+      el("div", "row-detail", [el("p", "row-blurb", module.blurb), preview]),
       el("div", "row-meta", [
         progressBar(total ? watchedCount / total : 0),
         el("span", "row-count", `${watchedCount}/${total}`),
@@ -172,7 +190,10 @@ function moduleRow(module, index) {
     el("span", "row-cue", complete ? "Revisit" : started ? "Continue" : "Begin")
   );
 
-  row.addEventListener("click", () => go(`/m/${module.id}`));
+  row.addEventListener("click", () => {
+    beginZoom(artWrap, artFor(module, index, "banner"));
+    go(`/m/${module.id}`);
+  });
   return row;
 }
 
@@ -227,4 +248,17 @@ export function renderHome(view) {
 
   view.replaceChildren(home);
   revealIn(home);
+
+  // Coming back from a module: land the zoom on the row it came from.
+  const returningId = takeReturnTarget();
+  if (returningId) {
+    const target = home.querySelector(
+      `.module-row[data-module-id="${returningId}"] .row-art-wrap`
+    );
+    if (target) {
+      // The row has to be in its settled position before we measure it.
+      target.closest(".module-row").classList.add("is-revealed");
+      completeZoom(target);
+    }
+  }
 }

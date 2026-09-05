@@ -78,6 +78,47 @@ button {
   background: radial-gradient(ellipse at 50% 30%, rgba(8, 8, 10, 0.55), rgba(8, 8, 10, 0.93) 70%);
 }
 
+/* Checkerboard in the palette's own tones — near-black against a faintly
+   warmer gold-tinted black. Large tiles and tiny contrast, so it reads as
+   woven cloth rather than a chessboard. */
+.checker {
+  position: fixed;
+  inset: -10%;
+  z-index: -4;
+  pointer-events: none;
+  background-image:
+    repeating-conic-gradient(
+      rgba(201, 162, 75, 0.032) 0% 25%,
+      rgba(255, 255, 255, 0.014) 0% 50%
+    );
+  background-size: 96px 96px;
+  will-change: transform;
+  animation: drift 44s ease-in-out infinite alternate;
+}
+
+/* Ambient breathing light over the checker */
+.aura {
+  position: fixed;
+  inset: -25%;
+  z-index: -4;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 34% at 28% 22%, rgba(201, 162, 75, 0.085), transparent 70%),
+    radial-gradient(34% 30% at 76% 72%, rgba(227, 199, 122, 0.06), transparent 70%);
+  will-change: transform;
+  animation: aura-drift 38s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-48px, -34px, 0); }
+}
+
+@keyframes aura-drift {
+  from { transform: translate3d(-2%, -1%, 0) scale(1); }
+  to { transform: translate3d(3%, 2%, 0) scale(1.08); }
+}
+
 /* Sacred geometry, standing behind everything and turning very slowly. */
 .sanctum {
   position: fixed;
@@ -87,6 +128,9 @@ button {
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  /* --parallax is set by the scroll loop; transform only, never top/left */
+  transform: translate3d(0, var(--parallax, 0px), 0);
+  will-change: transform;
 }
 
 .sanctum svg {
@@ -146,7 +190,42 @@ button {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+/* ---------- Shared-element zoom ---------- */
+
+/* The stand-in that flies between a row's art and the module hero. Two
+   layers: the frame takes the non-uniform scale, the image counter-scales
+   inside it so the artwork never smears. */
+.zoom-ghost {
+  position: fixed;
+  z-index: 40;
+  overflow: hidden;
+  border-radius: 14px;
+  transform-origin: top left;
+  pointer-events: none;
+  will-change: transform, opacity;
+  box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.95);
+}
+
+.zoom-ghost-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform-origin: top left;
+  will-change: transform;
+}
+
 /* ---------- Motion primitives ---------- */
+
+/* Page arrival — the same enlarge-and-settle as the hover preview, so the
+   first paint feels like it is opening rather than waiting. */
+@keyframes arrive {
+  from { opacity: 0; transform: scale(1.03) translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+.app-arrive { animation: arrive 700ms var(--ease) both; }
+.topbar { animation: arrive 560ms var(--ease) both; }
 
 /* Everything that arrives with the scroll uses this one pattern. */
 [data-reveal] {
@@ -221,7 +300,96 @@ button {
 
 .brand:hover .brand-mark { filter: drop-shadow(0 0 16px rgba(227, 199, 122, 0.7)); }
 
-.topbar-right { display: flex; align-items: center; gap: 14px; }
+.topbar-right { position: relative; display: flex; align-items: center; gap: 14px; }
+
+.user-button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: border-color 220ms var(--ease), background 220ms var(--ease);
+}
+
+.user-button:hover, .user-button[aria-expanded="true"] {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.user-sigil {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  color: #12100B;
+  background: var(--foil);
+}
+
+.user-caret {
+  font-size: 9px;
+  color: var(--text-dim);
+  transition: transform 260ms var(--ease);
+}
+
+.user-button[aria-expanded="true"] .user-caret { transform: rotate(180deg); }
+
+/* Absolutely positioned so opening it never pushes the page around. */
+.user-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  min-width: 210px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--glass-strong);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: 0 26px 56px -28px rgba(0, 0, 0, 0.95);
+  transform-origin: top right;
+  opacity: 0;
+  transform: translate3d(0, -6px, 0) scale(0.97);
+  visibility: hidden;
+  transition: opacity 220ms var(--ease), transform 260ms var(--ease),
+    visibility 0s linear 260ms;
+  z-index: 10;
+}
+
+.user-menu.is-open {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.user-menu-email {
+  display: block;
+  padding: 8px 10px 10px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: var(--text);
+  transition: background 200ms var(--ease), color 200ms var(--ease);
+}
+
+.user-menu-item:hover { background: rgba(201, 162, 75, 0.1); color: var(--gold-bright); }
 
 .user-name { font-size: 13px; color: var(--text-dim); }
 
@@ -585,17 +753,21 @@ button {
   -webkit-backdrop-filter: var(--blur);
   text-align: left;
   overflow: hidden;
-  transition: transform 0.35s var(--ease), border-color 0.3s var(--ease),
-    box-shadow 0.35s var(--ease), opacity 0.7s var(--ease);
+  transition: transform 320ms var(--ease), border-color 300ms var(--ease),
+    box-shadow 320ms var(--ease), opacity 700ms var(--ease);
+  will-change: transform;
 }
 
-.module-row:hover {
-  transform: translateY(-3px);
-  border-color: rgba(201, 162, 75, 0.55);
-  box-shadow: 0 22px 48px -24px rgba(0, 0, 0, 0.95), 0 0 34px -14px rgba(201, 162, 75, 0.5);
+.module-row:hover,
+.module-row:focus-visible {
+  transform: translate3d(0, -4px, 0) scale(1.012);
+  border-color: rgba(201, 162, 75, 0.6);
+  box-shadow: 0 26px 54px -26px rgba(0, 0, 0, 0.95), 0 0 38px -14px rgba(201, 162, 75, 0.55);
+  z-index: 2;
 }
 
-.module-row:active { transform: translateY(-1px) scale(0.995); }
+/* Settles rather than snapping back, and rapid clicks can't stack up */
+.module-row:active { transform: translate3d(0, -2px, 0) scale(1.002); }
 
 .module-row.is-complete { border-color: rgba(201, 162, 75, 0.42); }
 
@@ -667,12 +839,62 @@ button {
   margin: 0 0 5px 0;
 }
 
+/* Blurb and lesson preview are stacked in the same box and cross-fade, so
+   revealing detail on hover never changes the row's height. */
+.row-detail {
+  position: relative;
+  min-height: 38px;
+  margin-bottom: 12px;
+}
+
 .row-blurb {
   font-size: 12.5px;
   color: var(--text-dim);
   line-height: 1.5;
-  margin: 0 0 12px 0;
+  margin: 0;
+  transition: opacity 260ms var(--ease), transform 260ms var(--ease);
 }
+
+.row-preview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms var(--ease);
+}
+
+.row-chip {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--gold-bright);
+  border: 1px solid rgba(201, 162, 75, 0.35);
+  background: rgba(201, 162, 75, 0.07);
+  border-radius: 20px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate3d(0, 6px, 0);
+  transition: opacity 300ms var(--ease), transform 300ms var(--ease);
+  transition-delay: calc(var(--stagger, 0) * 45ms);
+}
+
+.row-chip.is-more { color: var(--text-dim); border-color: var(--border); background: none; }
+
+.module-row:hover .row-blurb,
+.module-row:focus-visible .row-blurb {
+  opacity: 0;
+  transform: translate3d(0, -4px, 0);
+}
+
+.module-row:hover .row-preview,
+.module-row:focus-visible .row-preview { opacity: 1; }
+
+.module-row:hover .row-chip,
+.module-row:focus-visible .row-chip { opacity: 1; transform: none; }
 
 .row-meta, .module-progress-row {
   display: flex;
@@ -1164,7 +1386,13 @@ button {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .sanctum svg, .infinity-trace, .burst-ring, .invocation-mark, .ritual-glyph,
-  .stat.is-at-risk .stat-value, .row-sheen, .split-word { animation: none; }
+  .stat.is-at-risk .stat-value, .row-sheen, .split-word,
+  .checker, .aura, .app-arrive, .topbar { animation: none; }
+  .zoom-ghost { display: none; }
+  /* State changes fall back to a plain opacity fade, no movement */
+  .module-row:hover, .module-row:active, .module-row:focus-visible { transform: none; }
+  .row-chip { transform: none; }
+  .user-menu { transform: none; }
   .split-word { opacity: 1; transform: none; }
   [data-reveal] { opacity: 1; transform: none; transition: none; }
   *, .backdrop, .module-row, .bar-fill, .lesson { transition: none !important; }

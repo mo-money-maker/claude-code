@@ -6,6 +6,7 @@ import { getModuleProgress, getProgress, isWatched } from "../state.js";
 import { el, statusRing, progressBar, setBackdrop } from "../ui.js";
 import { artFor } from "../art.js";
 import { revealIn, splitWords } from "../motion.js";
+import { beginZoom, completeZoom, zoomPending, setReturnTarget } from "../transition.js";
 import { go } from "../router.js";
 
 function lessonRow(module, submodule, index) {
@@ -44,11 +45,17 @@ export function renderModule(view, moduleId) {
 
   const back = el("button", "back", "← The path");
   back.type = "button";
-  back.addEventListener("click", () => go("/"));
+  back.addEventListener("click", () => {
+    beginZoom(hero, banner);
+    setReturnTarget(module.id);
+    go("/");
+  });
 
   const hero = el("div", "module-hero");
   hero.style.backgroundImage = `url("${banner}")`;
-  hero.dataset.reveal = "";
+  // The hero is the zoom's landing pad, so it must not also run its own
+  // entrance — that would fight the flight.
+  if (!zoomPending()) hero.dataset.reveal = "";
 
   const heading = el("h1", "module-heading", module.title);
 
@@ -70,4 +77,5 @@ export function renderModule(view, moduleId) {
   view.replaceChildren(body);
   splitWords(heading);
   revealIn(body);
+  completeZoom(hero);
 }
