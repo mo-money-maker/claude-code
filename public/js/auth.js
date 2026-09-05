@@ -20,7 +20,7 @@ function setMode(next) {
   tabSignup.classList.toggle("is-active", mode === "signup");
   nameField.hidden = mode !== "signup";
   nameField.querySelector("input").required = mode === "signup";
-  submitBtn.textContent = mode === "login" ? "Sign in" : "Create account";
+  submitBtn.textContent = mode === "login" ? "Enter" : "Begin";
   errorEl.hidden = true;
 }
 

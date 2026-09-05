@@ -3,22 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sign in — Curriculum</title>
+  <title>Enter — Curriculum</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap"
     rel="stylesheet"
   />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="auth-body">
+  <div class="sanctum" aria-hidden="true">
+    <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid meet">
+      <g class="sanctum-seed">
+        <circle cx="200" cy="200" r="52" />
+        <circle cx="200" cy="148" r="52" /><circle cx="200" cy="252" r="52" />
+        <circle cx="245" cy="174" r="52" /><circle cx="245" cy="226" r="52" />
+        <circle cx="155" cy="174" r="52" /><circle cx="155" cy="226" r="52" />
+      </g>
+      <circle class="sanctum-ring" cx="200" cy="200" r="150" />
+      <circle class="sanctum-ring dashed" cx="200" cy="200" r="172" />
+      <path class="infinity-base"
+        d="M 110,200 C 110,163 148,163 170,200 C 192,237 230,237 230,200 C 230,163 192,163 170,200 C 148,237 110,237 110,200 Z"
+        pathLength="100" />
+      <path class="infinity-trace"
+        d="M 110,200 C 110,163 148,163 170,200 C 192,237 230,237 230,200 C 230,163 192,163 170,200 C 148,237 110,237 110,200 Z"
+        pathLength="100" />
+    </svg>
+  </div>
+  <div class="grain" aria-hidden="true"></div>
+
   <main class="auth-card">
+    <span class="auth-mark">∞</span>
     <h1 class="auth-brand">Curriculum</h1>
+    <p class="auth-tagline">State creates reality</p>
 
     <div class="auth-tabs">
-      <button class="auth-tab is-active" id="tab-login" type="button">Sign in</button>
-      <button class="auth-tab" id="tab-signup" type="button">Create account</button>
+      <button class="auth-tab is-active" id="tab-login" type="button">Enter</button>
+      <button class="auth-tab" id="tab-signup" type="button">Begin</button>
     </div>
 
     <form class="auth-form" id="auth-form">
@@ -35,7 +57,7 @@
         <input type="password" name="password" autocomplete="current-password" required minlength="8" />
       </label>
       <p class="auth-error" id="auth-error" hidden></p>
-      <button class="auth-submit" type="submit">Sign in</button>
+      <button class="auth-submit" type="submit">Enter</button>
     </form>
   </main>
 

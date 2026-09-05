@@ -28,18 +28,19 @@ public/                Frontend — served as static files, no build step
   index.html            The whole app: one page, hash-routed views
   login.html             Sign in / create account screen
   css/styles.css          Design tokens + all styling
-  data/curriculum.js      Your real content: modules, submodules, rituals
-  assets/modules/*.svg     Module preview art (also the module background)
-  assets/video/*.webm       Generated placeholder lesson clips
-  js/api.js                  fetch wrapper for the backend
-  js/state.js                 In-memory state, synced to the server
-  js/router.js                 Hash router (#/, #/m/:id, #/w/:mid/:sid, #/r/:id)
-  js/ui.js                      Shared DOM helpers (status ring, bars, backdrop)
-  js/views/home.js               Goals, counters, module shelf, rituals
-  js/views/module.js              Lesson list over the module's picture
-  js/views/player.js               Video + autonomous completion
-  js/auth.js                        Wires up login.html
-  js/main.js                         Entry point: auth gate, routes, boot
+  data/curriculum.js      Your content: modules, lessons, rituals, mantras
+  assets/video/*.webm      Generated placeholder lesson clips
+  js/art.js                 Generates each module's gold key art
+  js/motion.js               Scroll reveals, count-ups, word-split headings
+  js/api.js                   fetch wrapper for the backend
+  js/state.js                  In-memory state, synced to the server
+  js/router.js                  Hash router (#/, #/m/:id, #/w/:mid/:sid, #/r/:id)
+  js/ui.js                       Shared DOM helpers (rings, bars, glyphs)
+  js/views/home.js                Mantra, counters, goals, module rows, rituals
+  js/views/module.js               Key-art hero + lesson list
+  js/views/player.js                Video + autonomous completion
+  js/auth.js                         Wires up login.html
+  js/main.js                          Entry point: auth gate, routes, boot
 
 server/                Backend
   server.js              Express app: mounts /api/* and serves public/
@@ -58,16 +59,21 @@ content updates.
 ```js
 export const modules = [
   {
-    id: "mod-more-life-1",              // must stay stable — it's the
-    title: "More Life Mastery 1.0",     // storage key for progress
-    blurb: "Shown on the module card.",
-    image: "assets/modules/more-life-1.svg",
+    id: "mod-more-life-1",           // must stay stable — it's the
+    title: "More Life Mastery 1.0",  // storage key for progress
+    blurb: "Shown on the row.",
+    kicker: "Begin here",            // small gold line above the title
+    motif: "ascent",                 // which sacred geometry the art uses
     submodules: [
       { id: "mlm1-framework", title: "The More Life Framework", videoUrl: "..." },
     ],
   },
 ];
 ```
+
+No artwork needed — key art is generated from the title and motif. Add
+`image: "assets/your-file.png"` to a module only when you want to override
+it with your own.
 
 Keep `id`s stable once real users have interacted with the app — they're
 the keys progress is stored under, so changing an id resets that item's
@@ -100,10 +106,12 @@ status for everyone.
 - **Module milestone**: finishing the last lesson in a module raises a
   celebration card with gold burst rings, your totals, and a jump into the
   next module.
-- **Module shelf**: horizontally scrollable, scroll-snapped module cards
-  with preview art. A plain vertical mouse wheel scrolls it sideways.
-- **Module picture as background**: entering a module fades its preview art
-  in behind the lesson list, under a dark wash so text stays readable.
+- **The path**: modules are full-width rows — no sliders, no carousels —
+  that rise into place as they reach the viewport.
+- **Module key art as background**: entering a module fades its art in
+  behind the lesson list, under a dark wash so text stays readable.
+- **A mantra a day**: one line from `mantras` in the data file surfaces on
+  the home screen, chosen by the date, so it changes overnight on its own.
 - **Resume**: whichever lesson you got furthest into without finishing
   surfaces as a Resume button, and the player picks up where you left off.
 - Daily Rituals (AM/PM) are tracked per calendar date, so they reset each
@@ -112,14 +120,42 @@ status for everyone.
   `navigator.sendBeacon` on page unload so a half-watched position isn't
   lost when the tab closes.
 
+## Design system
+
+The look is gold foil on near-black: Cinzel for display type, Inter for
+UI, and gold treated as a material (`--foil`) rather than a flat colour.
+Frosted panels, a gold hairline along card tops, film grain in soft-light,
+and a slowly turning seed-of-life behind everything.
+
+**Module key art is generated, not drawn** (`js/art.js`). Each module gets
+marble veining, a sacred-geometry motif, the infinity crest and its own
+title set in gold caps, seeded from its position so it's stable between
+loads. Two canvases are produced — a card for rows and backdrops, a wide
+banner for the module hero — so lettering is never cropped by its frame.
+Add a module to `data/curriculum.js` and it is on-brand immediately; set
+`image: "assets/..."` on a module to use your own artwork instead, and
+`motif:` to pick the geometry (`ascent`, `seed`, `rings`, `wave`,
+`hexagram`, `vesica`, `eye`).
+
+## Motion
+
+All motion is opacity and transform only, so nothing triggers layout.
+`js/motion.js` handles it: scroll reveals with a stagger, counters that
+count up when they appear, and headings that rise a word at a time.
+
+Scroll reveals carry a failsafe. An IntersectionObserver only reports what
+it samples, so a jump-scroll can skip an element and leave it invisible
+forever; a scroll/resize sweep reveals anything at or above the fold
+regardless. Everything collapses to no motion under
+`prefers-reduced-motion`.
+
 ## Placeholder media
 
-`public/assets/video/*.webm` are generated stand-in clips and
-`public/assets/modules/*.svg` is generated abstract art, both there so the
-app is usable before you have real content. Swap the `videoUrl` and
-`image` values in `data/curriculum.js` for your real files. Lesson titles
-under each module are placeholders too — the module names are yours, the
-lessons inside them are for you to rename.
+`public/assets/video/*.webm` are generated stand-in clips so the app is
+usable before you have real content. Swap the `videoUrl` values in
+`data/curriculum.js` for your real files. Lesson titles are placeholders
+too — the module names are yours, the lessons inside them are for you to
+rename.
 
 ## Security notes for going further than local dev
 
